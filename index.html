@@ -229,7 +229,7 @@
             background: #fff;
         }
 
-        /* 📁 自由追加ツリー構造 */
+        /* 📁 自由追加ツリー構造（スマホ最適化版） */
         .tree-actions {
             background: var(--card-bg);
             border-radius: 12px;
@@ -240,31 +240,33 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.05);
         }
         .tree-node {
-            margin-left: 12px;
-            padding-left: 8px;
-            border-left: 2px dashed var(--border-color);
+            margin-left: 10px;
+            padding-left: 6px;
+            border-left: 1px dashed var(--border-color);
             margin-top: 6px;
         }
         .tree-item {
             background: var(--card-bg);
             border: 1px solid var(--border-color);
             border-radius: 8px;
-            padding: 6px 10px;
+            padding: 8px 10px;
             display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 4px;
-            gap: 4px;
+            flex-direction: column; /* スマホ用に縦並びベース（幅確保） */
+            margin-bottom: 6px;
+            gap: 8px;
+        }
+        @media(min-width: 480px) {
+            .tree-item { flex-direction: row; justify-content: space-between; align-items: center; }
         }
         .tree-item.folder-item { border-left: 4px solid var(--warning); }
         .tree-item.file-item { border-left: 4px solid var(--primary); }
         
         .node-left {
             display: flex;
-            align-items: center;
+            align-items: flex-start; /* 上揃えにして長い文字も綺麗に */
             gap: 6px;
             flex: 1;
-            min-width: 0;
+            width: 100%;
         }
         .toggle-icon {
             cursor: pointer;
@@ -272,31 +274,39 @@
             user-select: none;
             width: 16px;
             text-align: center;
+            margin-top: 2px;
         }
         .node-name {
             font-size: 0.9rem;
             font-weight: 500;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+            word-break: break-all; /* 画面端で自動的に折り返す */
+            white-space: normal;  /* 省略（...）を廃止して全表示 */
+            line-height: 1.4;
+            flex: 1;
         }
         .node-controls {
             display: flex;
             align-items: center;
-            gap: 3px;
-            flex-shrink: 0;
+            justify-content: flex-end;
+            gap: 4px;
+            width: 100%; /* スマホでは右寄せで横一列に並べる */
+            flex-wrap: wrap;
+        }
+        @media(min-width: 480px) {
+            .node-controls { width: auto; }
         }
         .btn-mini {
-            padding: 6px 6px;
+            padding: 6px 8px;
             font-size: 0.75rem;
             font-weight: bold;
             border-radius: 4px;
             border: 1px solid var(--border-color);
             background: #fff;
             cursor: pointer;
+            min-height: 28px; /* タップしやすく */
         }
         .btn-mini:active { background: #f2f2f7; }
-        .btn-delete { color: var(--danger); border-color: #ffcccc; }
+        .btn-delete { color: var(--danger); border-color: #ffcccc; background: #fff5f5; }
         
         .hidden { display: none !important; }
     </style>
@@ -779,3 +789,4 @@
 
 </body>
 </html>
+
