@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>学習教材の所持管理・進捗チェッカー</title>
+    <style>
+        :root {
+            --bg-color: #f4f6f9;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --primary: #007aff;
+            --primary-light: #e5f1ff;
+            --success: #34c759;
+            --warning: #ff9500;
+            --danger: #ff3b30;
+            --border-color: #e5e5ea;
+            --text-muted: #8e8e93;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.5;
+            padding: 12px;
+            padding-bottom: 40px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: 1.2rem;
+            text-align: center;
+            margin-bottom: 12px;
+            color: #1c1c1e;
+        }
+
+        /* データ連携エリア */
+        .sync-section {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .sync-title {
+            font-size: 0.85rem;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .sync-buttons {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        .btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            transition: opacity 0.2s;
+        }
+        .btn:active { opacity: 0.7; }
+        .btn-primary { background-color: var(--primary); color: white; }
+        .btn-secondary { background-color: #8e8e93; color: white; }
+        .btn-success { background-color: var(--success); color: white; }
+        .btn-danger { background-color: var(--danger); color: white; }
+        
+        .sync-input-group {
+            display: flex;
+            gap: 6px;
+        }
+        .sync-input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 0.85rem;
+            background: #f2f2f7;
+        }
+        /* タブ切り替え */
+        .tabs {
+            display: flex;
+            background: #e5e5ea;
+            padding: 2px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            background: transparent;
+            font-size: 0.9rem;
+            font-weight: bold;
+            color: var(--text-muted);
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .tab-btn.active {
+            background: var(--card-bg);
+            color: var(--text-color);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+
+        /* セレクターボタン */
+        .selector-group {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .selector-label {
+            font-size: 0.85rem;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: var(--text-muted);
+        }
+        .btn-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+        }
+        .btn-grid-6 {
+            grid-template-columns: repeat(3, 1fr);
+        }
+        @media(min-width: 400px) {
+            .btn-grid-6 { grid-template-columns: repeat(6, 1fr); }
+        }
+        .select-btn {
+            padding: 10px 4px;
+            border: 1px solid var(--border-color);
+            background: #fafafa;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            cursor: pointer;
+            text-align: center;
+        }
+        .select-btn.active {
+            background: var(--primary-light);
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+        /* 科目リストエリア */
+        .subject-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+            border: 1px solid var(--border-color);
+        }
+        .subject-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            gap: 8px;
+        }
+        .subject-title {
+            font-size: 0.95rem;
+            font-weight: bold;
+            color: #1c1c1e;
+        }
+        .check-buttons {
+            display: flex;
+            gap: 4px;
+            flex-shrink: 0;
+        }
+        .check-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 1px solid var(--border-color);
+            background: #fff;
+            font-size: 0.9rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .check-btn[data-type="O"].active { background-color: #e2f7e6; border-color: var(--success); color: var(--success); }
+        .check-btn[data-type="T"].active { background-color: #fff3e0; border-color: var(--warning); color: var(--warning); }
+        .check-btn[data-type="X"].active { background-color: #ffebee; border-color: var(--danger); color: var(--danger); }
+        
+        .memo-input {
+            width: 100%;
+            padding: 6px 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 0.8rem;
+            background: #f9f9f9;
+            margin-top: 4px;
+            outline: none;
+        }
+        .memo-input:focus {
+            border-color: var(--text-muted);
+            background: #fff;
+        }
+
+        /* 📁 自由追加ツリー構造 */
+        .tree-actions {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 12px;
+            display: flex;
+            gap: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .tree-node {
+            margin-left: 12px;
+            padding-left: 8px;
+            border-left: 2px dashed var(--border-color);
+            margin-top: 6px;
+        }
+        .tree-item {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 6px 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 4px;
+            gap: 4px;
+        }
+        .tree-item.folder-item { border-left: 4px solid var(--warning); }
+        .tree-item.file-item { border-left: 4px solid var(--primary); }
+        
+        .node-left {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex: 1;
+            min-width: 0;
+        }
+        .toggle-icon {
+            cursor: pointer;
+            font-size: 0.85rem;
+            user-select: none;
+            width: 16px;
+            text-align: center;
+        }
+        .node-name {
+            font-size: 0.9rem;
+            font-weight: 500;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .node-controls {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            flex-shrink: 0;
+        }
+        .btn-mini {
+            padding: 6px 6px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            background: #fff;
+            cursor: pointer;
+        }
+        .btn-mini:active { background: #f2f2f7; }
+        .btn-delete { color: var(--danger); border-color: #ffcccc; }
+        
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>📝 教材所持・進捗チェッカー</h1>
+
+    <!-- 同期エリア -->
+    <div class="sync-section">
+        <div class="sync-title">🔗 データ共有・引き継ぎ</div>
+        <div class="sync-buttons">
+            <button class="btn btn-primary" onclick="exportData()"><span id="copy-text">📤 共有用コードをコピー</span></button>
+        </div>
+        <div class="sync-input-group">
+            <input type="text" id="sync-code-input" class="sync-input" placeholder="ここに共有コードを貼り付け">
+            <button class="btn btn-success" style="flex:none; width:130px;" onclick="importData()">📥 コード読込</button>
+        </div>
+    </div>
+
+    <!-- タブメニュー -->
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('kyotsu')">📘 共通テスト問題集</button>
+        <button class="tab-btn" onclick="switchTab('free')">📁 自由追加</button>
+    </div>
+
+    <!-- タブ1：共通テスト -->
+    <div id="tab-kyotsu" class="tab-content active">
+        <div class="selector-group">
+            <div class="selector-label">① 年度を選択</div>
+            <div class="btn-grid btn-grid-6" id="year-grid"></div>
+        </div>
+        <div class="selector-group hidden" id="series-container">
+            <div class="selector-label">② シリーズを選択</div>
+            <div class="btn-grid" id="series-grid"></div>
+        </div>
+        <div id="subject-container" class="hidden">
+            <div class="selector-label" style="margin-left:4px; margin-bottom:8px;">③ 所持・進捗チェック</div>
+            <div id="subject-list"></div>
+        </div>
+    </div>
+
+    <div id="tab-free" class="tab-content">
+        <div class="tree-actions">
+            <button class="btn btn-secondary" onclick="addRootNode('folder')">📁 ＋フォルダを追加</button>
+            <button class="btn btn-secondary" onclick="addRootNode('file')">📘 ＋教材を追加</button>
+        </div>
+        <div id="tree-root"></div>
+    </div>
+</div>
+
+<script>
+    // --- 定数定義（新旧課程マッピング） ---
+    const OLD_SUBJECTS = ["英語リーディング", "英語リスニング", "数学Ⅰ・A", "数学Ⅱ・B", "国語", "物理B", "化学B", "生物B", "地学B", "世界史B", "日本史B", "地理B", "現代社会", "倫理", "政治・経済", "倫理，政経"];
+    const NEW_SUBJECTS = ["英語リーディング", "英語リスニング", "数学Ⅰ・A", "数学🔍", "数学Ⅱ・B・C", "国語", "物理基礎/物理", "化学基礎/化学", "生物基礎/生物", "地学基礎/地学", "歴史総合，世界史探究", "歴史総合，日本史探究", "地理総合，地理探究", "公共，倫理", "公共，政治・経済", "情報Ⅰ"];
+    const YEARS = ["2022", "2023", "2024", "2025", "2026", "2027"];
+    const SERIES = [
+        { id: "black", name: "黒本 (河合)" },
+        { id: "blue", name: "青本 (駿台)" },
+        { id: "green", name: "緑本 (Z会)" },
+        { id: "yozemi", name: "代ゼミ" }
+    ];
+
+    // --- 状態管理オブジェクト ---
+    let state = {
+        kyotsu: {}, 
+        free: [],    
+        currentYear: null,
+        currentSeries: null
+    };
+
+    // --- 初期化処理 ---
+    window.addEventListener('DOMContentLoaded', () => {
+        loadLocalStorage();
+        initKyotsuUI();
+        renderTree();
+    });
+
+    // --- ローカルストレージ制御 ---
+    function saveLocalStorage() {
+        localStorage.setItem('sm_checker_data_v2', JSON.stringify({ kyotsu: state.kyotsu, free: state.free }));
+    }
+
+    function loadLocalStorage() {
+        const saved = localStorage.getItem('sm_checker_data_v2');
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                if (parsed.kyotsu) state.kyotsu = parsed.kyotsu;
+                if (parsed.free) state.free = parsed.free;
+            } catch (e) {
+                console.error("ローカルストレージの解析に失敗しました", e);
+            }
+        }
+    }
+
+    // --- タブ切り替え ---
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+        
+        if (tabId === 'kyotsu') {
+            document.querySelectorAll('.tab-btn')[0].classList.add('active');
+            document.getElementById('tab-kyotsu').classList.add('active');
+        } else {
+            document.querySelectorAll('.tab-btn')[1].classList.add('active');
+            document.getElementById('tab-free').classList.add('active');
+        }
+    }
+    // --- 共通テストUI生成 ---
+    function initKyotsuUI() {
+        const yearGrid = document.getElementById('year-grid');
+        yearGrid.innerHTML = '';
+        YEARS.forEach(y => {
+            const btn = document.createElement('button');
+            btn.className = 'select-btn';
+            btn.innerText = y + '年';
+            btn.onclick = () => selectYear(y, btn);
+            yearGrid.appendChild(btn);
+        });
+
+        const seriesGrid = document.getElementById('series-grid');
+        seriesGrid.innerHTML = '';
+        SERIES.forEach(s => {
+            const btn = document.createElement('button');
+            btn.className = 'select-btn';
+            btn.innerText = s.name;
+            btn.onclick = () => selectSeries(s.id, btn);
+            seriesGrid.appendChild(btn);
+        });
+    }
+
+    function selectYear(year, element) {
+        state.currentYear = year;
+        document.querySelectorAll('#year-grid .select-btn').forEach(b => b.classList.remove('active'));
+        element.classList.add('active');
+        
+        document.getElementById('series-container').classList.remove('hidden');
+        document.getElementById('subject-container').classList.add('hidden');
+        state.currentSeries = null;
+        document.querySelectorAll('#series-grid .select-btn').forEach(b => b.classList.remove('active'));
+    }
+
+    function selectSeries(seriesId, element) {
+        state.currentSeries = seriesId;
+        document.querySelectorAll('#series-grid .select-btn').forEach(b => b.classList.remove('active'));
+        element.classList.add('active');
+        
+        document.getElementById('subject-container').classList.remove('hidden');
+        renderSubjects();
+    }
+
+    function renderSubjects() {
+        const container = document.getElementById('subject-list');
+        container.innerHTML = '';
+        
+        const isNewCourse = parseInt(state.currentYear) >= 2025;
+        const subjects = isNewCourse ? NEW_SUBJECTS : OLD_SUBJECTS;
+
+        subjects.forEach(sub => {
+            const key = `${state.currentYear}_${state.currentSeries}_${sub}`;
+            if (!state.kyotsu[key]) {
+                state.kyotsu[key] = { O: false, T: false, X: false, memo: "" };
+            }
+            const data = state.kyotsu[key];
+
+            const card = document.createElement('div');
+            card.className = 'subject-card';
+
+            card.innerHTML = `
+                <div class="subject-header">
+                    <div class="subject-title">${sub}</div>
+                    <div class="check-buttons">
+                        <button class="check-btn ${data.O ? 'active' : ''}" data-type="O" onclick="toggleCheck('${key}', 'O', this)">〇</button>
+                        <button class="check-btn ${data.T ? 'active' : ''}" data-type="T" onclick="toggleCheck('${key}', 'T', this)">🔺</button>
+                        <button class="check-btn ${data.X ? 'active' : ''}" data-type="X" onclick="toggleCheck('${key}', 'X', this)">✖</button>
+                    </div>
+                </div>
+                <input type="text" class="memo-input" placeholder="メモを入力..." value="${data.memo || ''}" oninput="updateMemo('${key}', this.value)">
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    function toggleCheck(key, type, btn) {
+        const data = state.kyotsu[key];
+        if (type === 'X') {
+            if (data.X) {
+                data.X = false;
+            } else {
+                data.X = true;
+                data.O = false;
+                data.T = false;
+            }
+        } else {
+            data[type] = !data[type];
+            data.X = false;
+        }
+        saveLocalStorage();
+        
+        const parent = btn.parentElement;
+        parent.querySelector('[data-type="O"]').classList.toggle('active', data.O);
+        parent.querySelector('[data-type="T"]').classList.toggle('active', data.T);
+        parent.querySelector('[data-type="X"]').classList.toggle('active', data.X);
+    }
+
+    function updateMemo(key, value) {
+        state.kyotsu[key].memo = value;
+        saveLocalStorage();
+    }
+    // --- 📁 自由追加（階層ツリー構造）制御 ---
+    function generateId() {
+        return '_' + Math.random().toString(36).substr(2, 9);
+    }
+
+    function addRootNode(type) {
+        const msg = type === 'folder' ? '新しいフォルダ名を入力してください:' : '新しい教材名を入力してください:';
+        const name = prompt(msg);
+        if (!name) return;
+        state.free.push({
+            id: generateId(),
+            type: type,
+            name: name,
+            expanded: true,
+            children: []
+        });
+        saveLocalStorage();
+        renderTree();
+    }
+
+    function addChildNode(parentId, type) {
+        const msg = type === 'folder' ? '新しい＋フォルダ名を入力してください:' : '新しい＋教材名を入力してください:';
+        const name = prompt(msg);
+        if (!name) return;
+        
+        function traverseAndAdd(nodes) {
+            for (let node of nodes) {
+                if (node.id === parentId) {
+                    node.children.push({
+                        id: generateId(),
+                        type: type,
+                        name: name,
+                        expanded: true,
+                        children: []
+                    });
+                    return true;
+                }
+                if (node.children && node.children.length > 0) {
+                    if (traverseAndAdd(node.children)) return true;
+                }
+            }
+            return false;
+        }
+        
+        traverseAndAdd(state.free);
+        saveLocalStorage();
+        renderTree();
+    }
+
+    function deleteNode(id) {
+        if (!confirm('この項目（配下のフォルダ・教材も含む）を削除してもよろしいですか？')) return;
+        
+        function traverseAndDelete(nodes) {
+            for (let i = 0; i < nodes.length; i++) {
+                if (nodes[i].id === id) {
+                    nodes.splice(i, 1);
+                    return true;
+                }
+                if (nodes[i].children && nodes[i].children.length > 0) {
+                    if (traverseAndDelete(nodes[i].children)) return true;
+                }
+            }
+            return false;
+        }
+        
+        traverseAndDelete(state.free);
+        saveLocalStorage();
+        renderTree();
+    }
+
+    function moveNode(id, direction) {
+        function traverseAndMove(nodes) {
+            for (let i = 0; i < nodes.length; i++) {
+                if (nodes[i].id === id) {
+                    if (direction === 'up' && i > 0) {
+                        const temp = nodes[i];
+                        nodes[i] = nodes[i - 1];
+                        nodes[i - 1] = temp;
+                        return true;
+                    }
+                    if (direction === 'down' && i < nodes.length - 1) {
+                        const temp = nodes[i];
+                        nodes[i] = nodes[i + 1];
+                        nodes[i + 1] = temp;
+                        return true;
+                    }
+                }
+                if (nodes[i].children && nodes[i].children.length > 0) {
+                    if (traverseAndMove(nodes[i].children)) return true;
+                }
+            }
+            return false;
+        }
+        traverseAndMove(state.free);
+        saveLocalStorage();
+        renderTree();
+    }
+
+    function toggleFolder(id) {
+        function traverseAndToggle(nodes) {
+            for (let node of nodes) {
+                if (node.id === id) {
+                    node.expanded = !node.expanded;
+                    return true;
+                }
+                if (node.children && node.children.length > 0) {
+                    if (traverseAndToggle(node.children)) return true;
+                }
+            }
+            return false;
+        }
+        traverseAndToggle(state.free);
+        saveLocalStorage();
+        renderTree();
+    }
+    function renderTree() {
+        const container = document.getElementById('tree-root');
+        container.innerHTML = '';
+        if (state.free.length === 0) {
+            container.innerHTML = '<div style="text-align:center; color:var(--text-muted); font-size:0.85rem; padding:20px;">＋ボタンから教材やフォルダを自由に追加できます</div>';
+            return;
+        }
+        container.appendChild(buildTreeHTML(state.free));
+    }
+
+    function buildTreeHTML(nodes) {
+        const fragment = document.createDocumentFragment();
+        
+        nodes.forEach(node => {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'tree-wrapper';
+
+            const item = document.createElement('div');
+            item.className = `tree-item ${node.type === 'folder' ? 'folder-item' : 'file-item'}`;
+
+            const left = document.createElement('div');
+            left.className = 'node-left';
+            
+            if (node.type === 'folder') {
+                const toggle = document.createElement('span');
+                toggle.className = 'toggle-icon';
+                toggle.innerText = node.expanded ? '▼' : '▶';
+                toggle.onclick = () => toggleFolder(node.id);
+                left.appendChild(toggle);
+                
+                const icon = document.createElement('span');
+                icon.innerText = '📁';
+                left.appendChild(icon);
+            } else {
+                const spacer = document.createElement('span');
+                spacer.className = 'toggle-icon';
+                left.appendChild(spacer);
+                
+                const icon = document.createElement('span');
+                icon.innerText = '📘';
+                left.appendChild(icon);
+            }
+
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'node-name';
+            nameSpan.innerText = node.name;
+            left.appendChild(nameSpan);
+            item.appendChild(left);
+
+            const controls = document.createElement('div');
+            controls.className = 'node-controls';
+
+            const btnUp = document.createElement('button');
+            btnUp.className = 'btn-mini';
+            btnUp.innerText = '▲';
+            btnUp.onclick = () => moveNode(node.id, 'up');
+            controls.appendChild(btnUp);
+
+            const btnDown = document.createElement('button');
+            btnDown.className = 'btn-mini';
+            btnDown.innerText = '▼';
+            btnDown.onclick = () => moveNode(node.id, 'down');
+            controls.appendChild(btnDown);
+
+            if (node.type === 'folder') {
+                const btnAddFile = document.createElement('button');
+                btnAddFile.className = 'btn-mini';
+                btnAddFile.innerText = '＋教材';
+                btnAddFile.onclick = () => addChildNode(node.id, 'file');
+                controls.appendChild(btnAddFile);
+
+                const btnAddFolder = document.createElement('button');
+                btnAddFolder.className = 'btn-mini';
+                btnAddFolder.innerText = '＋フォルダ';
+                btnAddFolder.onclick = () => addChildNode(node.id, 'folder');
+                controls.appendChild(btnAddFolder);
+            }
+
+            const btnDel = document.createElement('button');
+            btnDel.className = 'btn-mini btn-delete';
+            btnDel.innerText = '削除';
+            btnDel.onclick = () => deleteNode(node.id);
+            controls.appendChild(btnDel);
+
+            item.appendChild(controls);
+            wrapper.appendChild(item);
+
+            if (node.type === 'folder' && node.children && node.children.length > 0) {
+                const childContainer = document.createElement('div');
+                childContainer.className = 'tree-node';
+                if (!node.expanded) {
+                    childContainer.classList.add('hidden');
+                }
+                childContainer.appendChild(buildTreeHTML(node.children));
+                wrapper.appendChild(childContainer);
+            }
+
+            fragment.appendChild(wrapper);
+        });
+
+        return fragment;
+    }
+
+    // --- データエクスポート ---
+    function exportData() {
+        try {
+            const jsonString = JSON.stringify({ kyotsu: state.kyotsu, free: state.free });
+            const code = btoa(unescape(encodeURIComponent(jsonString)));
+            
+            navigator.clipboard.writeText(code).then(() => {
+                const copyBtnText = document.getElementById('copy-text');
+                copyBtnText.innerText = '✅ コピー完了！';
+                setTimeout(() => { copyBtnText.innerText = '📤 共有用コードをコピー'; }, 2000);
+            }).catch(err => {
+                const txtAttr = document.createElement('textarea');
+                txtAttr.value = code;
+                document.body.appendChild(txtAttr);
+                txtAttr.select();
+                document.execCommand('copy');
+                document.body.removeChild(txtAttr);
+                alert('共有コードをコピーしました！');
+            });
+        } catch (e) {
+            alert('データの暗号化に失敗しました。');
+        }
+    }
+
+    // --- データインポート ---
+    function importData() {
+        const input = document.getElementById('sync-code-input').value.trim();
+        if (!input) { alert('共有コードが入力されていません。'); return; }
+        if (!confirm('相手から送られたデータで現在の自分の状態を完全に「上書き同期」しますか？')) return;
+
+        try {
+            const decodedJson = decodeURIComponent(escape(atob(input)));
+            const parsed = JSON.parse(decodedJson);
+
+            if (parsed && (parsed.kyotsu || parsed.free)) {
+                state.kyotsu = parsed.kyotsu || {};
+                state.free = parsed.free || [];
+                saveLocalStorage();
+                document.getElementById('sync-code-input').value = '';
+                if (state.currentYear && state.currentSeries) renderSubjects();
+                renderTree();
+                alert('🎉 データの同期に100%成功しました！');
+            } else {
+                alert('不正なコード形式です。');
+            }
+        } catch (e) {
+            alert('コードの解析に失敗しました。');
+        }
+    }
+</script>
+
+</body>
+</html>
