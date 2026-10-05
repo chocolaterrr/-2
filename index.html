@@ -633,7 +633,7 @@
         saveLocalStorage();
         renderTree();
     }
-    function renderTree() {
+        function renderTree() {
         const container = document.getElementById('tree-root');
         container.innerHTML = '';
         if (state.free.length === 0) {
@@ -760,24 +760,70 @@
         }
     }
 
-    // --- データインポート ---
+    // --- データインポート（上書きせず合体する改良版） ---
     function importData() {
         const input = document.getElementById('sync-code-input').value.trim();
         if (!input) { alert('共有コードが入力されていません。'); return; }
-        if (!confirm('相手から送られたデータで現在の自分の状態を完全に「上書き同期」しますか？')) return;
+        if (!confirm('相手のデータを消さずに、自分のデータと「合体（マージ）」します。よろしいですか？')) return;
 
         try {
             const decodedJson = decodeURIComponent(escape(atob(input)));
             const parsed = JSON.parse(decodedJson);
 
-            if (parsed && (parsed.kyotsu || parsed.free)) {
-                state.kyotsu = parsed.kyotsu || {};
-                state.free = parsed.free || [];
+            if (parsed) {
+                // 1. 共通テスト問題集の合体
+                if (parsed.kyotsu) {
+                    for (let key in parsed.kyotsu) {
+                        const opData = parsed.kyotsu[key];
+                        if (!state.kyotsu[key]) {
+                            state.kyotsu[key] = { O: false, T: false, X: false, memo: "" };
+                        }
+                        const myData = state.kyotsu[key];
+                        
+                        // どちらかが〇、🔺、✖なら、それぞれ点灯させる（進捗が進んでいる方を優先）
+                        myData.O = myData.O || opData.O;
+                        myData.T = myData.T || opData.T;
+                        myData.X = myData.X || opData.X;
+                        
+                        // 矛盾防止：〇か🔺にチェックがついたら✖は自動で消す
+                        if (myData.O || myData.T) {
+                            myData.X = false;
+                        }
+
+                        // メモの合体（内容が違えば「自分のメモ / 相手のメモ」にする）
+                        if (opData.memo && opData.memo.trim() !== "") {
+                            if (!myData.memo || myData.memo.trim() === "") {
+                                myData.memo = opData.memo;
+                            } else if (!myData.memo.includes(opData.memo)) {
+                                myData.memo = myData.memo + " / " + opData.memo;
+                            }
+                        }
+                    }
+                }
+
+                // 2. 自由追加ツリーの合体（自分が持っていないフォルダ・教材を追加）
+                if (parsed.free && parsed.free.length > 0) {
+                    const myIds = new Set();
+                    function collectIds(nodes) {
+                        nodes.forEach(n => {
+                            myIds.add(n.id);
+                            if (n.children) collectIds(n.children);
+                        });
+                    }
+                    collectIds(state.free);
+
+                    parsed.free.forEach(opNode => {
+                        if (!myIds.has(opNode.id)) {
+                            state.free.push(opNode); // 持っていないものを末尾に追加
+                        }
+                    });
+                }
+
                 saveLocalStorage();
                 document.getElementById('sync-code-input').value = '';
                 if (state.currentYear && state.currentSeries) renderSubjects();
                 renderTree();
-                alert('🎉 データの同期に100%成功しました！');
+                alert('🎉 2人のデータを綺麗に合体（マージ）することに成功しました！');
             } else {
                 alert('不正なコード形式です。');
             }
@@ -789,4 +835,3 @@
 
 </body>
 </html>
-
